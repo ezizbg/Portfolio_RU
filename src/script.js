@@ -78,16 +78,24 @@ window.scrollTo = function (options) {
 
 document.addEventListener('DOMContentLoaded', function () {
   const portfolioCards = document.querySelectorAll('.works__card');
+  const showPortfolioCard = (card, index = 0) => {
+    setTimeout(() => {
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+    }, index * 80);
+  };
+
+  if (!('IntersectionObserver' in window)) {
+    portfolioCards.forEach(showPortfolioCard);
+    return;
+  }
 
   // Добавляем анимацию появления карточек с задержкой
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry, index) => {
         if (entry.isIntersecting) {
-          setTimeout(() => {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-          }, index * 80);
+          showPortfolioCard(entry.target, index);
           observer.unobserve(entry.target);
         }
       });
@@ -107,23 +115,42 @@ document.addEventListener('DOMContentLoaded', function () {
 const animItems = document.querySelectorAll('._anim-items');
 
 if (animItems.length > 0) {
-  window.addEventListener('scroll', animOnScroll);
+  const getScrollTop = () =>
+    window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+
+  const getViewportHeight = () =>
+    window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight || 0;
+
+  const activateHeaderItems = () => {
+    document.querySelectorAll('.header ._anim-items').forEach((animItem) => {
+      animItem.classList.add('_active');
+    });
+  };
+
   function animOnScroll() {
+    const scrollTop = getScrollTop();
+    const viewportHeight = getViewportHeight();
+
+    if (!viewportHeight) {
+      activateHeaderItems();
+      return;
+    }
+
     for (let index = 0; index < animItems.length; index++) {
       const animItem = animItems[index];
       const animItemHeight = animItem.offsetHeight;
       const animItemOffset = offset(animItem).top;
       const animStart = 4;
 
-      let animItemPoint = window.innerHeight - animItemHeight / animStart;
+      let animItemPoint = viewportHeight - animItemHeight / animStart;
 
-      if (animItemHeight > window.innerHeight) {
-        animItemPoint = window.innerHeight - window.innerHeight / animStart;
+      if (animItemHeight > viewportHeight) {
+        animItemPoint = viewportHeight - viewportHeight / animStart;
       }
 
       if (
-        pageYOffset > animItemOffset - animItemPoint &&
-        pageYOffset < animItemOffset + animItemHeight
+        scrollTop >= animItemOffset - animItemPoint &&
+        scrollTop <= animItemOffset + animItemHeight
       ) {
         animItem.classList.add('_active');
       } else {
@@ -141,9 +168,27 @@ if (animItems.length > 0) {
     return { top: rect.top + scrollTop, left: rect.left + scrollLeft };
   }
 
-  setTimeout(() => {
-    animOnScroll();
-  }, 200);
+  const requestAnimCheck = () => {
+    requestAnimationFrame(animOnScroll);
+  };
+
+  activateHeaderItems();
+  requestAnimCheck();
+  window.addEventListener('scroll', requestAnimCheck, { passive: true });
+  window.addEventListener('resize', requestAnimCheck);
+  window.addEventListener('orientationchange', requestAnimCheck);
+  window.addEventListener('load', requestAnimCheck);
+  window.addEventListener('pageshow', requestAnimCheck);
+  document.addEventListener('DOMContentLoaded', requestAnimCheck);
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', requestAnimCheck);
+    window.visualViewport.addEventListener('scroll', requestAnimCheck);
+  }
+
+  [150, 350, 800, 1400].forEach((delay) => {
+    setTimeout(requestAnimCheck, delay);
+  });
 }
 
 /*------------------------------------------------------------------------------------------------------------------*/
