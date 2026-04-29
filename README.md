@@ -1,7 +1,5 @@
 # Portfolio Website
 
-## Демо
-
 https://ezizbg.github.io/Portfolio_RU/
 
 ---
